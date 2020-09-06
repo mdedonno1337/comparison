@@ -11,6 +11,7 @@
 #' @param LR.ss a vector of likelihood ratios for the comparisons of items known to be from the same source
 #' @param LR.ds a vector of likelihood ratios for the comparisons of items known to be from different sources
 #' @param method the method used to perform the calculation, either `"raw"` or `"laplace"`
+#' @param ties the method used to solve the calibration if ties are present in the predicor list, either `"primary"`, `"secondary"` or `"tertiary"`
 #' 
 #' @author David Lucy
 #'
@@ -23,9 +24,9 @@
 #' 
 #' @seealso [isotone::gpava()], [calc.ece()]
 #' @export
-calibrate.set = function(LR.ss, LR.ds, method = c("raw", "laplace")) {
-    
+calibrate.set = function(LR.ss, LR.ds, method = c("raw", "laplace"), ties = c("primary", "secondary", "tertiary")) {
     method = match.arg(method)
+    ties = match.arg(ties)
 
     # get the lengths of the LR vectors and prior vector
     n.ss = length(LR.ss)
@@ -39,14 +40,19 @@ calibrate.set = function(LR.ss, LR.ds, method = c("raw", "laplace")) {
     # order the vectors
     ordered.indicies = order(LR.array)
     ordered.indicator.array = indicator.array[ordered.indicies]
+    ordered.LR.array = LR.array[ordered.indicies]
     
     # implement Laplace's rule of sucession in the way of Brummer
     if (method == "laplace") {
         ordered.indicator.array = c(1, 0, ordered.indicator.array, 1, 0)
     }
     
-    # gpava doesn't really care what you send it as the first argument so long as it is ascending and of the appropriate length
-    calibrated.set = gpava(seq(length(ordered.indicator.array)), ordered.indicator.array)
+    # calibration the data with the PAVA algorithm
+    calibrated.set = gpava(
+        ordered.LR.array,
+        ordered.indicator.array,
+        ties = ties
+    )
     
     calibrated.posterior.probabilities = calibrated.set$x
     
