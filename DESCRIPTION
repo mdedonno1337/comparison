@@ -1,6 +1,6 @@
 Package: comparison
-Version: 1.0-5
-Date: 2020-08-04
+Version: 1.0-6
+Date: 2020-08-02
 Title: Multivariate Likelihood Ratio Calculation and Evaluation
 Authors@R: c(person("David", "Lucy", role = "aut"),
              person("James", "Curran", role = c("aut", "cre"),
@@ -17,7 +17,7 @@ Description: Functions for calculating and evaluating likelihood ratios from uni
         on  D. Ramos and J. Gonzalez-Rodrigues, (2008) "Cross-entropy analysis of the information in forensic speaker recognition," 
         in Proc. IEEE Odyssey, Speaker Lang. Recognit. Workshop.
 Depends: R (>= 3.5.0)
-Imports: isotone
+Imports: isotone, CVglasso
 License: GPL (>=2)
 URL: github.com/jmcurran/comparison
 LazyLoad: yes

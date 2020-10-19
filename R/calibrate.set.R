@@ -11,6 +11,7 @@
 #' @param LR.ss a vector of likelihood ratios for the comparisons of items known to be from the same source
 #' @param LR.ds a vector of likelihood ratios for the comparisons of items known to be from different sources
 #' @param method the method used to perform the calculation, either `"raw"` or `"laplace"`
+#' @param ties method to solve ties in the predictors list, either `"none"` (not solved) or `"primary"`, `"secondary"` or `"tertiary"` (passed to the isotone::gpava() function)
 #' 
 #' @author David Lucy
 #'
@@ -19,24 +20,20 @@
 #'   \item{LR.cal.ds}{calibrated LRs for the comparison for different set}
 #' }
 #' 
-#' @references D. Ramos and J. Gonzalez-Rodrigues, (2008) "Cross-entropy analysis of the information in forensic speaker recognition," in Proc. IEEE Odyssey, Speaker Lang. Recognit. Workshop.
+#' @references Ramos, D. & Gonzalez-Rodriguez, J. (2008) Cross-entropy analysis of the information in forensic speaker recognition; IEEE Odyssey.
+#' @references de Leeuw, J. & Hornik, K. & Mair, P., (2009), Isotone Optimization in R: Pool-Adjacent-Violators Algorithm (PAVA) and Active Set Methods, https://www.jstatsoft.org/article/view/v032i05
 #' 
 #' @seealso [isotone::gpava()], [calc.ece()]
 #' @export
-calibrate.set = function(LR.ss, LR.ds, method = c("raw", "laplace")) {
+calibrate.set = function(LR.ss, LR.ds, method = c("raw", "laplace"), ties = c("none", "primary", "secondary", "tertiary")) {
     
     method = match.arg(method)
+    ties = match.arg(ties)
 
-    # correction for sorting - possibly not needed for R's sorting leave it in anyway
-    LR.ss = LR.ss - 1e-06
-    
     # get the lengths of the LR vectors and prior vector
     n.ss = length(LR.ss)
     n.ds = length(LR.ds)
     n = n.ss + n.ds
-    
-    # set an arbitary cutoff to prevent division by zero errors but bodgy this and I'm not too keen on it - however so long as the value is
-    # close to, but less than, 1 it makes little difference cutoff = 0.99999999999999999999999999
     
     # produce vectors for the indicator function and LRs use convention that 1 signifies same set, and 0 different set
     indicator.array = c(rep(0, length = n.ds), rep(1, length = n.ss))
@@ -51,14 +48,29 @@ calibrate.set = function(LR.ss, LR.ds, method = c("raw", "laplace")) {
         ordered.indicator.array = c(1, 0, ordered.indicator.array, 1, 0)
     }
     
-    
-    # gpava doesn't really care what you send it as the first argument so long as it is ascending and of the appropriate length - here I just
-    # sent an integer array
-    if (method == "raw") {
-        calibrated.set = gpava(1:n, ordered.indicator.array)
-    }
-    if (method == "laplace") {
-        calibrated.set = gpava(1:(n + 4), ordered.indicator.array)
+    # compute the calibrated.set values with the gpava function
+    if (ties == "none") {
+        # this function call dont take into account ties values in the input data.
+        # this is the default behavior if the user dont specify a method to solve the ties values.
+        calibrated.set = gpava(
+            seq(length(ordered.indicator.array)),
+            ordered.indicator.array
+        )
+        
+    } else {
+        # this function call the gpava function taking into account the parameter passed to solve the ties values
+        # check the publication of Leeuw et al (2009)
+        ordered.LR.array = LR.array[ordered.indicies]
+        
+        if (method == "laplace") {
+            ordered.LR.array = c(0, 0, ordered.LR.array, Inf, Inf)
+        }
+        
+        calibrated.set = gpava(
+            ordered.LR.array,
+            ordered.indicator.array,
+            ties = ties
+        )
     }
     
     calibrated.posterior.probabilities = calibrated.set$x
@@ -70,18 +82,11 @@ calibrate.set = function(LR.ss, LR.ds, method = c("raw", "laplace")) {
     }
     
     
-    # prior odds
+    # compute the calibrated LR based upon the prior odds and the observed data
     prior.odds = n.ss / n.ds
-    
-    # arbitrarily set a cutoff to prevent division by zero errors when we
-    # calculate the odds not very keen on this - don't think it is needed
-    # calibrated.posterior.probabilities[calibrated.posterior.probabilities > cutoff] = cutoff
     
     log.calibrated.posterior.LRs = log(calibrated.posterior.probabilities/(1 - calibrated.posterior.probabilities)) - log(prior.odds)
     
-    # Brummer adds this in the ensure the idempotent property of the logLRs - not too sure how important this is
-    bit.to.add.on = 1:n * 1e-06/n
-    log.calibrated.posterior.LRs = log.calibrated.posterior.LRs + bit.to.add.on
     calibrated.posterior.LRs = exp(log.calibrated.posterior.LRs)
     
     # unpack all the calibrated LR values
