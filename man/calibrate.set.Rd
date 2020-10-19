@@ -4,7 +4,12 @@
 \alias{calibrate.set}
 \title{Calculate the calibrated set of idea LRs}
 \usage{
-calibrate.set(LR.ss, LR.ds, method = c("raw", "laplace"))
+calibrate.set(
+  LR.ss,
+  LR.ds,
+  method = c("raw", "laplace"),
+  ties = c("none", "primary", "secondary", "tertiary")
+)
 }
 \arguments{
 \item{LR.ss}{a vector of likelihood ratios for the comparisons of items known to be from the same source}
@@ -12,6 +17,8 @@ calibrate.set(LR.ss, LR.ds, method = c("raw", "laplace"))
 \item{LR.ds}{a vector of likelihood ratios for the comparisons of items known to be from different sources}
 
 \item{method}{the method used to perform the calculation, either \code{"raw"} or \code{"laplace"}}
+
+\item{ties}{method to solve ties in the predictors list, either \code{"none"} (not solved) or \code{"primary"}, \code{"secondary"} or \code{"tertiary"} (passed to the isotone::gpava() function)}
 }
 \value{
 a \code{list} with two items: \describe{
@@ -27,7 +34,9 @@ This is an internal function, and is not meant to be called directly. However
 it has been exported just in case.
 }
 \references{
-D. Ramos and J. Gonzalez-Rodrigues, (2008) "Cross-entropy analysis of the information in forensic speaker recognition," in Proc. IEEE Odyssey, Speaker Lang. Recognit. Workshop.
+Ramos, D. & Gonzalez-Rodriguez, J. (2008) Cross-entropy analysis of the information in forensic speaker recognition; IEEE Odyssey.
+
+de Leeuw, J. & Hornik, K. & Mair, P., (2009), Isotone Optimization in R: Pool-Adjacent-Violators Algorithm (PAVA) and Active Set Methods, https://www.jstatsoft.org/article/view/v032i05
 }
 \seealso{
 \code{\link[isotone:gpava]{isotone::gpava()}}, \code{\link[=calc.ece]{calc.ece()}}
